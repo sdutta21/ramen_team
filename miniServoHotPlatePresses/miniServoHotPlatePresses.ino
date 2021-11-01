@@ -13,7 +13,7 @@ int twoangle = 270; // for the second button presser because the servo is orient
 void setup() {
   // put your setup code here, to run once:
  powerservo.attach(9);  // attaches the servo on pin 9 to the servo object
- boilservo.attach(10);  // attaches the servo on pin 9 to the servo object
+ boilservo.attach(10);  // attaches the servo on pin 10 to the servo object
 }
 
 //OKay so this whole loop just swings each servo arm down. If its off, the hotplate will turn on, if its on, the hotplate will turn off.  
