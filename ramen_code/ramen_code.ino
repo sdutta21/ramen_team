@@ -16,7 +16,7 @@ int incomingByte = 0; // for incoming serial data
 int pos = 0;    // variable to store the servo position
 uint16_t power_pos = 90;
 uint16_t boil_pos = 270; // for the second button presser because the servo is oriented differently
-uint16_t ramen_default_pos = 0;
+uint16_t ramen_default_pos = 90;
 uint16_t powder_pos = 0;
 
 uint8_t power_servo_pin = 9;
@@ -84,7 +84,7 @@ float temp_check(){
 }
 
 void reactToInput(int input){
-  panServo.write(90 - input);
+  ramen_servo.write(90 - input);
   //0 is home position, 90 is arm extended and knocks the ramen out.
   //We can probably play around with speeds here to make the ramen fall
   //in a way that minimizes splash but that might not be v1
@@ -120,12 +120,14 @@ void loop() {
   Serial.print("C");
   Serial.println();
   Serial.println(power);
-  if (temp > 95 && power){
-    reactToInput(80);
-    sleep(500);
+  
+  if (temp > 30 && power){
     reactToInput(0);
+    delay(500);
+    reactToInput(90);
 
-    if (powder_pos == 0) {
+    for(int i = 0; i < 4; i++){
+      if (powder_pos == 0) {
             powder_pos = 180;
             pivot.write(powder_pos);
             delay(500);
@@ -139,10 +141,9 @@ void loop() {
           wiggle();
           Serial.println("current pos: 0");
      }
+    }
     
-
-    
-    sleep(180000);
+    delay(180000);
     hotplate_on_off();
   }
   
