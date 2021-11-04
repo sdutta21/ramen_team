@@ -7,6 +7,8 @@
 Servo powerservo;  // hotplate power servo
 Servo boilservo;  // hotplate boil button servo
 Servo ramen_servo;
+Servo shake;  // shaking servo
+Servo pivot; // dispense servo
 
 int incomingByte = 0; // for incoming serial data
 
@@ -15,10 +17,13 @@ int pos = 0;    // variable to store the servo position
 uint16_t power_pos = 90;
 uint16_t boil_pos = 270; // for the second button presser because the servo is oriented differently
 uint16_t ramen_default_pos = 0;
+uint16_t powder_pos = 0;
 
 uint8_t power_servo_pin = 9;
 uint8_t boil_servo_pin = 10;
 uint8_t ramen_servo_pin = 11;
+uint8_t shake_pin = 12;
+uint8_t pivot_pin = 13;
 
 bool power = false;
 
@@ -35,6 +40,9 @@ void setup() {
   powerservo.write(pos);
   boilservo.write(boil_pos);
   ramen_servo.write(ramen_default_pos);
+  
+  shake.attach(shake_pin);
+  pivot.attach(pivot_pin);
   sensors.begin();
 }
 
@@ -75,12 +83,23 @@ float temp_check(){
   return celcius;
 }
 
-int reactToInput(int input){
+void reactToInput(int input){
   panServo.write(90 - input);
   //0 is home position, 90 is arm extended and knocks the ramen out.
   //We can probably play around with speeds here to make the ramen fall
   //in a way that minimizes splash but that might not be v1
-  return input;
+}
+
+
+void wiggle() {
+  for (int i = 0; i < 5; i++) {
+          shake.write(90);
+          delay(200);
+          shake.write(180);
+          delay(200);
+          shake.write(90);
+          delay(200);
+  }
 }
 
 void loop() {
@@ -105,6 +124,24 @@ void loop() {
     reactToInput(80);
     sleep(500);
     reactToInput(0);
+
+    if (powder_pos == 0) {
+            powder_pos = 180;
+            pivot.write(powder_pos);
+            delay(500);
+            wiggle();
+            Serial.println("current pos: 180");
+     }
+     else {
+          powder_pos = 0;
+          pivot.write(powder_pos);
+          delay(500);
+          wiggle();
+          Serial.println("current pos: 0");
+     }
+    
+
+    
     sleep(180000);
     hotplate_on_off();
   }
