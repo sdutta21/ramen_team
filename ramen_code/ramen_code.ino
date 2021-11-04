@@ -102,6 +102,25 @@ void wiggle() {
   }
 }
 
+void powder_dispense(int repeat){
+  for(int i = 0; i < repeat; i++){
+      if (powder_pos == 0) {
+            powder_pos = 180;
+            pivot.write(powder_pos);
+            delay(500);
+            wiggle();
+            Serial.println("current pos: 180");
+     }
+     else {
+          powder_pos = 0;
+          pivot.write(powder_pos);
+          delay(500);
+          wiggle();
+          Serial.println("current pos: 0");
+     }
+    }
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
   if (Serial.available() > 0) {
@@ -121,28 +140,11 @@ void loop() {
   Serial.println();
   Serial.println(power);
   
-  if (temp > 30 && power){
+  if (temp > 95 && power){
     reactToInput(0);
     delay(500);
     reactToInput(90);
-
-    for(int i = 0; i < 4; i++){
-      if (powder_pos == 0) {
-            powder_pos = 180;
-            pivot.write(powder_pos);
-            delay(500);
-            wiggle();
-            Serial.println("current pos: 180");
-     }
-     else {
-          powder_pos = 0;
-          pivot.write(powder_pos);
-          delay(500);
-          wiggle();
-          Serial.println("current pos: 0");
-     }
-    }
-    
+    powder_dispense(4);
     delay(180000);
     hotplate_on_off();
   }
