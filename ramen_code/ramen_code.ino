@@ -121,7 +121,7 @@ void loop() {
   Serial.println();
   Serial.println(power);
   
-  if (temp > 30 && power){
+  if (temp > 90 && power){
     reactToInput(0);
     delay(500);
     reactToInput(90);
