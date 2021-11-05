@@ -122,10 +122,9 @@ void loop() {
   Serial.println(power);
   
   if (temp > 90 && power){
-    reactToInput(0);
-    delay(500);
-    reactToInput(90);
 
+    
+//dropping powder
     for(int i = 0; i < 4; i++){
       if (powder_pos == 0) {
             powder_pos = 180;
@@ -142,7 +141,14 @@ void loop() {
           Serial.println("current pos: 0");
      }
     }
-    
+
+   delay(30000);
+//dropping ramen
+    reactToInput(0);
+    delay(500);
+    reactToInput(90);
+
+ // cook for 3 min
     delay(180000);
     hotplate_on_off();
   }
