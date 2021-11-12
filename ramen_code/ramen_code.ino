@@ -12,7 +12,6 @@ Servo pivot; // dispense servo
 
 int incomingByte = 0; // for incoming serial data
 
-
 int pos = 0;    // variable to store the servo position
 uint16_t power_pos = 90;
 uint16_t boil_pos = 270; // for the second button presser because the servo is oriented differently
@@ -102,9 +101,34 @@ void wiggle() {
   }
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  if (Serial.available() > 0) {
+void powder_dispense(int repeat){
+  for(int i = 0; i < repeat; i++){
+      if (powder_pos == 0) {
+            powder_pos = 180;
+            pivot.write(powder_pos);
+            delay(500);
+            wiggle();
+            Serial.println("current pos: 180");
+     }
+     else {
+          powder_pos = 0;
+          pivot.write(powder_pos);
+          delay(500);
+          wiggle();
+          Serial.println("current pos: 0");
+     }
+    }
+}
+
+void ramen_dispense(){
+    reactToInput(0);
+    delay(500);
+    reactToInput(90);
+}
+
+
+void run_all(){
+    if (Serial.available() > 0) {
     incomingByte = Serial.read();
     Serial.println(incomingByte);
     if (incomingByte == 10){
@@ -121,36 +145,19 @@ void loop() {
   Serial.println();
   Serial.println(power);
   
-  if (temp > 90 && power){
-
-    
-//dropping powder
-    for(int i = 0; i < 4; i++){
-      if (powder_pos == 0) {
-            powder_pos = 180;
-            pivot.write(powder_pos);
-            delay(500);
-            wiggle();
-            Serial.println("current pos: 180");
-     }
-     else {
-          powder_pos = 0;
-          pivot.write(powder_pos);
-          delay(500);
-          wiggle();
-          Serial.println("current pos: 0");
-     }
-    }
-
-   delay(30000);
-//dropping ramen
+  if (temp > 95 && power){
     reactToInput(0);
     delay(500);
     reactToInput(90);
-
- // cook for 3 min
+    powder_dispense(4);
     delay(180000);
     hotplate_on_off();
   }
-  
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  run_all();
+  //powder_dispense(4);
+  //ramen_dispense();
 }
