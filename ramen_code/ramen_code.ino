@@ -1,6 +1,7 @@
 #include <Servo.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <LiquidCrystal.h>
 
 #define ONE_WIRE_BUS 5
 
@@ -28,10 +29,13 @@ bool power = false;
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
+LiquidCrystal lcd(7,8,9,10,11,12);
+
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  lcd.begin(16, 2);
   powerservo.attach(power_servo_pin);
   boilservo.attach(boil_servo_pin);
   ramen_servo.attach(ramen_servo_pin);
@@ -124,6 +128,13 @@ void ramen_dispense(){
     reactToInput(0);
     delay(500);
     reactToInput(90);
+}
+
+void lcd_display(String temp, String time_left){
+  lcd.setCursor(0,0);
+  lcd.print(out);
+  lcd.setCursor(0,1);
+  lcd.print(time_left);
 }
 
 
