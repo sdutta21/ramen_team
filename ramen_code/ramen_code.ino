@@ -2,6 +2,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <LiquidCrystal.h>
+#include <GSM.h>
+
 
 #define ONE_WIRE_BUS 5
 
@@ -19,11 +21,16 @@ uint16_t boil_pos = 270; // for the second button presser because the servo is o
 uint16_t ramen_default_pos = 90;
 uint16_t powder_pos = 0;
 
+
+uint8_t start_button = 4;
 uint8_t power_servo_pin = 9;
 uint8_t boil_servo_pin = 10;
 uint8_t ramen_servo_pin = 11;
 uint8_t shake_pin = 12;
 uint8_t pivot_pin = 13;
+uint8_t sim_pin = 14;
+
+int buttonState = 0;
 
 bool power = false;
 
@@ -62,6 +69,24 @@ void hotplate_on_off(){
     power = true;
   }
 }
+
+
+
+
+
+void SIM900power()
+{
+  pinMode(sim_pin, OUTPUT); 
+  digitalWrite(sim_pin,LOW);
+  delay(1000);
+  digitalWrite(sim_pin,HIGH);
+  delay(2000);
+  digitalWrite(sim_pin,LOW);
+  delay(3000);
+}
+
+
+
 
 //toggle boil switch
 void hotplate_boil(){
@@ -132,9 +157,14 @@ void ramen_dispense(){
 
 void lcd_display(String temp, String time_left){
   lcd.setCursor(0,0);
-  lcd.print(out);
+  delay(50);
+  lcd.print("Temperature:  "+temp);
+  delay(500);
+  
   lcd.setCursor(0,1);
-  lcd.print(time_left);
+  delay(50);
+  lcd.print("Time Left:  " + time_left);
+  delay(500);
 }
 
 
@@ -157,9 +187,7 @@ void run_all(){
   Serial.println(power);
   
   if (temp > 95 && power){
-    reactToInput(0);
-    delay(500);
-    reactToInput(90);
+    ramen_dispense();
     powder_dispense(4);
     delay(180000);
     hotplate_on_off();
@@ -167,8 +195,11 @@ void run_all(){
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  run_all();
-  //powder_dispense(4);
-  //ramen_dispense();
+  //lcd_display("95", "8:30");
+
+  buttonState = digitalRead(buttonPin);
+  if (buttonState == HIGH) {
+    //run_all();
+    buttonState = 0;
+  } 
 }
