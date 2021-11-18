@@ -2,7 +2,6 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <LiquidCrystal.h>
-#include <GSM.h>
 
 
 #define ONE_WIRE_BUS 5
@@ -23,6 +22,7 @@ uint16_t powder_pos = 0;
 
 
 uint8_t start_button = 4;
+uint8_t emergency_stop = 3;
 uint8_t power_servo_pin = 9;
 uint8_t boil_servo_pin = 10;
 uint8_t ramen_servo_pin = 11;
@@ -30,7 +30,9 @@ uint8_t shake_pin = 12;
 uint8_t pivot_pin = 13;
 uint8_t sim_pin = 14;
 
-int buttonState = 0;
+int buttonStateStart = 0;
+int buttonStateEnd = 0;
+
 
 bool power = false;
 
@@ -54,6 +56,12 @@ void setup() {
   shake.attach(shake_pin);
   pivot.attach(pivot_pin);
   sensors.begin();
+
+  pinMode(start_button, INPUT);
+  pinMode(emergency_stop, INPUT);
+
+  int buttonStateStart = 0;
+  int buttonStateEnd = 0;
 }
 
 //toggle hotplate switch
@@ -84,7 +92,6 @@ void SIM900power()
   digitalWrite(sim_pin,LOW);
   delay(3000);
 }
-
 
 
 
@@ -169,37 +176,42 @@ void lcd_display(String temp, String time_left){
 
 
 void run_all(){
-    if (Serial.available() > 0) {
-    incomingByte = Serial.read();
-    Serial.println(incomingByte);
-    if (incomingByte == 10){
-      boil();
-    }
-    else if(incomingByte == 50){
+  boil();
+  while(true){
+    float temp = temp_check();
+    Serial.print(temp);
+    Serial.print("C");
+    Serial.println();
+    Serial.println(power);
+  
+    if (temp > 95 && power){
+      ramen_dispense();
+      powder_dispense(4);
+      delay(180000);
       hotplate_on_off();
     }
-  }
+    buttonStateEnd = digitalRead(emergency_stop);
+    Serial.print("End Status: ");
+    Serial.print(buttonStateEnd);
+    Serial.println();
+    if (buttonStateEnd == HIGH){
+      Serial.println("Halted");
+      break;
+    }
+    
+  } 
   
-  float temp = temp_check();
-  Serial.print(temp);
-  Serial.print("C");
-  Serial.println();
-  Serial.println(power);
-  
-  if (temp > 95 && power){
-    ramen_dispense();
-    powder_dispense(4);
-    delay(180000);
-    hotplate_on_off();
-  }
 }
 
 void loop() {
   //lcd_display("95", "8:30");
-
-  buttonState = digitalRead(buttonPin);
-  if (buttonState == HIGH) {
-    //run_all();
-    buttonState = 0;
+  //ramen_dispense();
+  //powder_dispense(4);
+  buttonStateStart = digitalRead(start_button);
+  if (buttonStateStart == HIGH) {
+    Serial.print("Start Status: ");
+    Serial.print(buttonStateStart);
+    Serial.println();
+    run_all();
   } 
 }
