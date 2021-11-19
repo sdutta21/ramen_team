@@ -20,7 +20,7 @@ uint16_t boil_pos = 270; // for the second button presser because the servo is o
 uint16_t ramen_default_pos = 90;
 uint16_t powder_pos = 0;
 
-
+uint8_t ledPin =  3;
 uint8_t start_button = 4;
 uint8_t emergency_stop = 3;
 uint8_t power_servo_pin = 9;
@@ -59,7 +59,8 @@ void setup() {
 
   pinMode(start_button, INPUT);
   pinMode(emergency_stop, INPUT);
-
+  pinMode(ledPin, OUTPUT);
+  
   int buttonStateStart = 0;
   int buttonStateEnd = 0;
 }
@@ -198,6 +199,7 @@ void run_all(){
     Serial.println();
     if (buttonStateEnd == HIGH){
       hotplate_on_off();
+      digitalWrite(ledPin, LOW);
       Serial.println("Halted");
       break;
     }
@@ -212,6 +214,7 @@ void loop() {
   //powder_dispense(4);
   buttonStateStart = digitalRead(start_button);
   if (buttonStateStart == HIGH) {
+    digitalWrite(ledPin, HIGH);
     Serial.print("Start Status: ");
     Serial.print(buttonStateStart);
     Serial.println();
