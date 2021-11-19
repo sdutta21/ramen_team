@@ -182,7 +182,9 @@ void run_all(){
     Serial.print(temp);
     Serial.print("C");
     Serial.println();
-    Serial.println(power);
+    Serial.print("Hot: ");
+    Serial.print(power);
+    Serial.println();
   
     if (temp > 95 && power){
       ramen_dispense();
@@ -195,6 +197,7 @@ void run_all(){
     Serial.print(buttonStateEnd);
     Serial.println();
     if (buttonStateEnd == HIGH){
+      hotplate_on_off();
       Serial.println("Halted");
       break;
     }
