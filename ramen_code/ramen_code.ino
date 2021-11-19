@@ -20,7 +20,7 @@ uint16_t boil_pos = 270; // for the second button presser because the servo is o
 uint16_t ramen_default_pos = 90;
 uint16_t powder_pos = 0;
 
-uint8_t ledPin =  3;
+uint8_t ledPin =  2;
 uint8_t start_button = 4;
 uint8_t emergency_stop = 3;
 uint8_t power_servo_pin = 9;
