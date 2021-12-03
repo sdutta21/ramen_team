@@ -40,15 +40,16 @@ char lcd_temp[16];
 
 bool power = false;
 
+
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-LiquidCrystal lcd(7,8,9,10,11,12);
+LiquidCrystal lcd(22,24,26,28,30,32);
 
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  lcd.begin(16, 2);
+  
   powerservo.attach(power_servo_pin);
   boilservo.attach(boil_servo_pin);
   ramen_servo.attach(ramen_servo_pin);
@@ -67,6 +68,9 @@ void setup() {
   
   int buttonStateStart = 0;
   int buttonStateEnd = 0;
+
+  lcd.begin(16, 2);
+  lcd.print("hello, world!");
 }
 
 //toggle hotplate switch
@@ -170,7 +174,7 @@ void ramen_dispense(){
 void lcd_display(String temp, String time_left){
   lcd.setCursor(0,0);
   delay(50);
-  lcd.print("Temperature:  "+temp);
+  lcd.print("Temperature:  "+ temp);
   delay(500);
   
   lcd.setCursor(0,1);
@@ -195,10 +199,10 @@ void run_all(){
       ramen_dispense();
       powder_dispense(4);
       
-      while(seconds != 0 && minutes != 0){
+      while(secondes != 0 && minutes != 0){
         sprintf(lcd_temp, "%f", temp);
         sprintf(timeline,"%0.2d mins %0.2d secs", minutes, secondes);
-        lcd_display(lcd_temp,timeline)
+        lcd_display(lcd_temp,timeline);
         
         delay(1000);
         secondes--;
@@ -226,15 +230,16 @@ void run_all(){
 }
 
 void loop() {
-  //lcd_display("95", "8:30");
+  lcd_display("95", "8:30");
+
   //ramen_dispense();
   //powder_dispense(4);
-  buttonStateStart = digitalRead(start_button);
-  if (buttonStateStart == HIGH) {
-    digitalWrite(ledPin, HIGH);
-    Serial.print("Start Status: ");
-    Serial.print(buttonStateStart);
-    Serial.println();
-    run_all();
-  } 
+//  buttonStateStart = digitalRead(start_button);
+//  if (buttonStateStart == HIGH) {
+//    digitalWrite(ledPin, HIGH);
+//    Serial.print("Start Status: ");
+//    Serial.print(buttonStateStart);
+//    Serial.println();
+//    run_all();
+//  } 
 }
