@@ -33,6 +33,10 @@ uint8_t sim_pin = 14;
 int buttonStateStart = 0;
 int buttonStateEnd = 0;
 
+uint8_t minutes = 6;
+uint8_t secondes = 0;
+char timeline[16];
+char lcd_temp[16];
 
 bool power = false;
 
@@ -190,7 +194,20 @@ void run_all(){
     if (temp > 95 && power){
       ramen_dispense();
       powder_dispense(4);
-      delay(180000);
+      
+      while(seconds != 0 && minutes != 0){
+        sprintf(lcd_temp, "%f", temp);
+        sprintf(timeline,"%0.2d mins %0.2d secs", minutes, secondes);
+        lcd_display(lcd_temp,timeline)
+        
+        delay(1000);
+        secondes--;
+        if (secondes == 0)
+        {
+          secondes = 59;
+          minutes --;
+        }
+      }
       hotplate_on_off();
     }
     buttonStateEnd = digitalRead(emergency_stop);
