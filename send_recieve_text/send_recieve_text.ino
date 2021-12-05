@@ -1,8 +1,11 @@
 #include <SoftwareSerial.h>
 
-SoftwareSerial mySerial(7, 8);
-void setup() {
-  // put your setup code here, to run once:
+//Create software serial object to communicate with SIM900
+SoftwareSerial mySerial(7, 8); //SIM900 Tx & Rx is connected to Arduino #7 & #8
+String number;
+String Data;
+void setup()
+{
   //Begin serial communication with Arduino and Arduino IDE (Serial Monitor)
   Serial.begin(9600);
   
@@ -14,36 +17,38 @@ void setup() {
 
   mySerial.println("AT"); //Handshaking with SIM900
   updateSerial();
+  
   mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
   updateSerial();
   mySerial.println("AT+CNMI=1,2,0,0,0"); // Decides how newly arrived SMS messages should be handled
   updateSerial();
 }
 
-void SendMessage(){
+void SendMessage(String receiver, String message){
+  Serial.println("SendMessage");
   mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
+  String number = "\""  + receiver + "\"";
+  Serial.println("AT+CMGS=" + number);
   updateSerial();
-  mySerial.println("AT+CMGS=\"+ZZxxxxxxxxxx\"");//change ZZ with country code and xxxxxxxxxxx with phone number to sms
+  mySerial.println("AT+CMGS=" + number);
   updateSerial();
-  mySerial.print("Last Minute Engineers | lastminuteengineers.com"); //text content
+  mySerial.print(message); //text content
   updateSerial();
   mySerial.write(26);
 }
 
-void SIM900power()
+void loop()
 {
-  pinMode(9, OUTPUT); 
-  digitalWrite(9,LOW);
-  delay(1000);
-  digitalWrite(9,HIGH);
-  delay(2000);
-  digitalWrite(9,LOW);
-  delay(3000);
-}
 
-void loop() {
-  // put your main code here, to run repeatedly:
   updateSerial();
+  if(number != NULL){
+    SendMessage(number, "Preparing Ramen..."); 
+    
+    delay(10000);
+    SendMessage(number, "Ramen Done."); 
+    number = "";
+  }
+ 
 }
 
 void updateSerial()
@@ -51,10 +56,29 @@ void updateSerial()
   delay(500);
   while (Serial.available()) 
   {
+
     mySerial.write(Serial.read());//Forward what Serial received to Software Serial Port
+
   }
   while(mySerial.available()) 
   {
-    Serial.write(mySerial.read());//Forward what Software Serial received to Serial Port
+    char character = mySerial.read(); // Receive a single character from the software serial port
+    Data.concat(character); // Add the received character to the receive buffer
+
+    Serial.write(character);
+    
+    if (character == '\n'){
+
+      if(Data.indexOf("+CMT") == 0){
+        
+        char subbuff[13];
+        memcpy(subbuff, &Data[7], 12);
+        subbuff[12] = '\0';
+        number = subbuff;
+        }  
+        
+        Data = "";
+     }
+    
   }
 }

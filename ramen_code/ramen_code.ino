@@ -2,6 +2,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <LiquidCrystal.h>
+#include <SoftwareSerial.h>
 
 
 #define ONE_WIRE_BUS 5
@@ -11,6 +12,8 @@ Servo boilservo;  // hotplate boil button servo
 Servo ramen_servo;
 Servo shake;  // shaking servo
 Servo pivot; // dispense servo
+String number;
+String Data;
 
 int incomingByte = 0; // for incoming serial data
 
@@ -44,11 +47,14 @@ bool power = false;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 LiquidCrystal lcd(22,24,26,28,30,32);
+SoftwareSerial mySerial(7, 8); //SIM900 Tx & Rx is connected to Arduino #7 & #8
+
 
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  Serial.println("Initializing..."); 
   
   powerservo.attach(power_servo_pin);
   boilservo.attach(boil_servo_pin);
@@ -70,7 +76,14 @@ void setup() {
   int buttonStateEnd = 0;
 
   lcd.begin(16, 2);
-  lcd.print("hello, world!");
+
+  mySerial.println("AT"); //Handshaking with SIM900
+  updateSerial();
+  
+  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
+  updateSerial();
+  mySerial.println("AT+CNMI=1,2,0,0,0"); // Decides how newly arrived SMS messages should be handled
+  updateSerial();
 }
 
 //toggle hotplate switch
@@ -229,11 +242,33 @@ void run_all(){
   
 }
 
-void loop() {
-  lcd_display("95", "8:30");
+void SendMessage(String receiver, String message){
+  Serial.println("SendMessage");
+  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
+  String number = "\""  + receiver + "\"";
+  Serial.println("AT+CMGS=" + number);
+  updateSerial();
+  mySerial.println("AT+CMGS=" + number);
+  updateSerial();
+  mySerial.print(message); //text content
+  updateSerial();
+  mySerial.write(26);
+}
 
-  //ramen_dispense();
-  //powder_dispense(4);
+void loop() {
+
+  //SMS Version
+  updateSerial();
+  if(number != NULL){
+    SendMessage(number, "Preparing Ramen..."); 
+    digitalWrite(ledPin, HIGH);
+    run_all();
+    SendMessage(number, "Ramen Done."); 
+    number = "";
+  }
+
+  //Button Version
+  
 //  buttonStateStart = digitalRead(start_button);
 //  if (buttonStateStart == HIGH) {
 //    digitalWrite(ledPin, HIGH);
