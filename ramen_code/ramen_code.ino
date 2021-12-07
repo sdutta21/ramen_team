@@ -5,33 +5,42 @@
 #include <SoftwareSerial.h>
 
 
-#define ONE_WIRE_BUS 5
+#define ONE_WIRE_BUS 38
 
 Servo powerservo;  // hotplate power servo
 Servo boilservo;  // hotplate boil button servo
 Servo ramen_servo;
 Servo shake;  // shaking servo
 Servo pivot; // dispense servo
-String number;
-String Data;
+Servo waterservo;
+//String number;
+//String Data;
 
-int incomingByte = 0; // for incoming serial data
+//int incomingByte = 0; // for incoming serial data
 
 int pos = 0;    // variable to store the servo position
 uint16_t power_pos = 90;
 uint16_t boil_pos = 270; // for the second button presser because the servo is oriented differently
 uint16_t ramen_default_pos = 90;
 uint16_t powder_pos = 0;
+uint16_t water_default_pos = 0;
 
-uint8_t ledPin =  2;
-uint8_t start_button = 4;
-uint8_t emergency_stop = 3;
-uint8_t power_servo_pin = 9;
-uint8_t boil_servo_pin = 10;
-uint8_t ramen_servo_pin = 11;
-uint8_t shake_pin = 12;
-uint8_t pivot_pin = 13;
-uint8_t sim_pin = 14;
+uint8_t start_button = 34;
+uint8_t emergency_stop = 36;
+uint8_t power_servo_pin = 40;
+uint8_t boil_servo_pin = 42;
+
+
+uint8_t ramen_servo_pin = 52;
+
+
+uint8_t shake_pin = 44;
+uint8_t pivot_pin = 53;
+
+
+//uint8_t sim_pin = 14;
+
+uint8_t water_servo_pin = 50;
 
 int buttonStateStart = 0;
 int buttonStateEnd = 0;
@@ -47,22 +56,24 @@ bool power = false;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 LiquidCrystal lcd(22,24,26,28,30,32);
-SoftwareSerial mySerial(7, 8); //SIM900 Tx & Rx is connected to Arduino #7 & #8
+//SoftwareSerial mySerial(7, 8); //SIM900 Tx & Rx is connected to Arduino #7 & #8
 
 
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  Serial.println("Initializing..."); 
+//  Serial.println("Initializing..."); 
   
   powerservo.attach(power_servo_pin);
   boilservo.attach(boil_servo_pin);
   ramen_servo.attach(ramen_servo_pin);
-  
+  waterservo.attach(water_servo_pin);
+
   powerservo.write(pos);
   boilservo.write(boil_pos);
   ramen_servo.write(ramen_default_pos);
+  waterservo.write(water_default_pos);
   
   shake.attach(shake_pin);
   pivot.attach(pivot_pin);
@@ -70,20 +81,19 @@ void setup() {
 
   pinMode(start_button, INPUT);
   pinMode(emergency_stop, INPUT);
-  pinMode(ledPin, OUTPUT);
   
   int buttonStateStart = 0;
   int buttonStateEnd = 0;
 
   lcd.begin(16, 2);
 
-  mySerial.println("AT"); //Handshaking with SIM900
-  updateSerial();
-  
-  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
-  updateSerial();
-  mySerial.println("AT+CNMI=1,2,0,0,0"); // Decides how newly arrived SMS messages should be handled
-  updateSerial();
+//  mySerial.println("AT"); //Handshaking with SIM900
+//  updateSerial();
+//  
+//  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
+//  updateSerial();
+//  mySerial.println("AT+CNMI=1,2,0,0,0"); // Decides how newly arrived SMS messages should be handled
+//  updateSerial();
 }
 
 //toggle hotplate switch
@@ -101,19 +111,26 @@ void hotplate_on_off(){
 }
 
 
-
-
-
-void SIM900power()
-{
-  pinMode(sim_pin, OUTPUT); 
-  digitalWrite(sim_pin,LOW);
-  delay(1000);
-  digitalWrite(sim_pin,HIGH);
-  delay(2000);
-  digitalWrite(sim_pin,LOW);
-  delay(3000);
+void open_water(){
+  waterservo.write(15);                  // sets the servo position according to the scaled value
+  delay(15);
 }
+
+void close_water(){
+  waterservo.write(0);                  // sets the servo position according to the scaled value
+  delay(15);
+}
+
+//void SIM900power()
+//{
+//  pinMode(sim_pin, OUTPUT); 
+//  digitalWrite(sim_pin,LOW);
+//  delay(1000);
+//  digitalWrite(sim_pin,HIGH);
+//  delay(2000);
+//  digitalWrite(sim_pin,LOW);
+//  delay(3000);
+//}
 
 
 
@@ -233,7 +250,6 @@ void run_all(){
     Serial.println();
     if (buttonStateEnd == HIGH){
       hotplate_on_off();
-      digitalWrite(ledPin, LOW);
       Serial.println("Halted");
       break;
     }
@@ -241,34 +257,35 @@ void run_all(){
   } 
   
 }
-
-void SendMessage(String receiver, String message){
-  Serial.println("SendMessage");
-  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
-  String number = "\""  + receiver + "\"";
-  Serial.println("AT+CMGS=" + number);
-  updateSerial();
-  mySerial.println("AT+CMGS=" + number);
-  updateSerial();
-  mySerial.print(message); //text content
-  updateSerial();
-  mySerial.write(26);
-}
+//
+//void SendMessage(String receiver, String message){
+//  Serial.println("SendMessage");
+//  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
+//  String number = "\""  + receiver + "\"";
+//  Serial.println("AT+CMGS=" + number);
+//  updateSerial();
+//  mySerial.println("AT+CMGS=" + number);
+//  updateSerial();
+//  mySerial.print(message); //text content
+//  updateSerial();
+//  mySerial.write(26);
+//}
 
 void loop() {
 
   //SMS Version
-  updateSerial();
-  if(number != NULL){
-    SendMessage(number, "Preparing Ramen..."); 
-    digitalWrite(ledPin, HIGH);
-    run_all();
-    SendMessage(number, "Ramen Done."); 
-    number = "";
-  }
+//  updateSerial();
+//  if(number != NULL){
+//    SendMessage(number, "Preparing Ramen..."); 
+//    digitalWrite(ledPin, HIGH);
+//    run_all();
+//    SendMessage(number, "Ramen Done."); 
+//    number = "";
+//  }
 
   //Button Version
-  
+  float temp = temp_check();
+  Serial.println(temp);
 //  buttonStateStart = digitalRead(start_button);
 //  if (buttonStateStart == HIGH) {
 //    digitalWrite(ledPin, HIGH);
