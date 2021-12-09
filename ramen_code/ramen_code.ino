@@ -13,6 +13,7 @@ Servo ramen_servo;
 Servo shake;  // shaking servo
 Servo pivot; // dispense servo
 Servo waterservo;
+Servo tempservo;
 //String number;
 //String Data;
 
@@ -24,14 +25,17 @@ uint16_t boil_pos = 270; // for the second button presser because the servo is o
 uint16_t ramen_default_pos = 90;
 uint16_t powder_pos = 0;
 uint16_t water_default_pos = 0;
+uint16_t temp_default_pos = 180;
+uint16_t temp_insert_pos = 90;
+
 
 uint8_t start_button = 34;
 uint8_t emergency_stop = 36;
-uint8_t power_servo_pin = 40;
-uint8_t boil_servo_pin = 42;
+uint8_t power_servo_pin = 13;
+uint8_t boil_servo_pin = 12;
 
 
-uint8_t ramen_servo_pin = 52;
+uint8_t ramen_servo_pin = 10;
 
 
 uint8_t shake_pin = 44;
@@ -40,7 +44,9 @@ uint8_t pivot_pin = 53;
 
 //uint8_t sim_pin = 14;
 
-uint8_t water_servo_pin = 50;
+uint8_t water_servo_pin = 8;
+
+uint8_t temp_servo_pin = 9;
 
 int buttonStateStart = 0;
 int buttonStateEnd = 0;
@@ -69,11 +75,13 @@ void setup() {
   boilservo.attach(boil_servo_pin);
   ramen_servo.attach(ramen_servo_pin);
   waterservo.attach(water_servo_pin);
+  tempservo.attach(temp_servo_pin);
 
   powerservo.write(pos);
   boilservo.write(boil_pos);
   ramen_servo.write(ramen_default_pos);
   waterservo.write(water_default_pos);
+  tempservo.write(temp_default_pos);
   
   shake.attach(shake_pin);
   pivot.attach(pivot_pin);
@@ -119,6 +127,13 @@ void open_water(){
 void close_water(){
   waterservo.write(0);                  // sets the servo position according to the scaled value
   delay(15);
+}
+
+
+void dispense_water(){
+  open_water();
+  delay(20000);
+  close_water();
 }
 
 //void SIM900power()
@@ -215,7 +230,9 @@ void lcd_display(String temp, String time_left){
 
 
 void run_all(){
+  dispense_water()
   boil();
+  tempservo.write(temp_insert_pos);
   while(true){
     float temp = temp_check();
     Serial.print(temp);
@@ -224,7 +241,7 @@ void run_all(){
     Serial.print("Hot: ");
     Serial.print(power);
     Serial.println();
-  
+    
     if (temp > 95 && power){
       ramen_dispense();
       powder_dispense(4);
@@ -243,6 +260,7 @@ void run_all(){
         }
       }
       hotplate_on_off();
+      tempservo.write(temp_default_pos);
     }
     buttonStateEnd = digitalRead(emergency_stop);
     Serial.print("End Status: ");
@@ -250,6 +268,7 @@ void run_all(){
     Serial.println();
     if (buttonStateEnd == HIGH){
       hotplate_on_off();
+      tempservo.write(temp_default_pos);
       Serial.println("Halted");
       break;
     }
@@ -284,14 +303,13 @@ void loop() {
 //  }
 
   //Button Version
-  float temp = temp_check();
-  Serial.println(temp);
-//  buttonStateStart = digitalRead(start_button);
-//  if (buttonStateStart == HIGH) {
-//    digitalWrite(ledPin, HIGH);
-//    Serial.print("Start Status: ");
-//    Serial.print(buttonStateStart);
-//    Serial.println();
-//    run_all();
-//  } 
+
+  buttonStateStart = digitalRead(start_button);
+  if (buttonStateStart == HIGH) {
+    digitalWrite(ledPin, HIGH);
+    Serial.print("Start Status: ");
+    Serial.print(buttonStateStart);
+    Serial.println();
+    run_all();
+  } 
 }
