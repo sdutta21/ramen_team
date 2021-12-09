@@ -4,7 +4,7 @@
 const int MOTOR_STEP_PIN = 35;
 const int MOTOR_DIRECTION_PIN = 37;
 
-uint8_t limit_switch = 40;
+int limit_switch = A0;
 
 SpeedyStepper stepper;
 
@@ -20,12 +20,13 @@ void stepper_ramen(){
   stepper.setAccelerationInStepsPerSecondPerSecond(300);
 
   while(analogRead(limit_switch) == 0){
-    stepper.moveRelativeInSteps(500);
+    Serial.println(analogRead(limit_switch));
+    stepper.moveRelativeInSteps(-500);
     if (analogRead(limit_switch) != 0){
-      stepper.moveRelativeInSteps(-100); // full rev backwards
+      stepper.moveRelativeInSteps(100); // full rev backwards
       break;
     }
-    delay(500);
+    //delay(500);
   }
 }
 
