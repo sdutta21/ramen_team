@@ -2,6 +2,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <LiquidCrystal.h>
+#include <SpeedyStepper.h>
 
 //Servos
 Servo power_servo;  // hotplate power servo
@@ -19,18 +20,22 @@ int ramen_default_pos = 90;
 int powder_pos = 0;
 int water_default_pos = 0;
 int temp_default_pos = 180;
-int temp_pos = 90;
+int temp_pos = 80;
 
 //pins
 uint8_t start_button = 34;
 uint8_t emergency_stop = 36;
-uint8_t power_servo_pin = 40;
-uint8_t boil_servo_pin = 42;
-uint8_t ramen_servo_pin = 52;
+uint8_t power_servo_pin = 6;
+uint8_t boil_servo_pin = 5;
+uint8_t ramen_servo_pin = 10;
 uint8_t shake_pin = 7;
-uint8_t pivot_servo_pin = 53;
-uint8_t water_servo_pin = 50;
+uint8_t pivot_servo_pin = 11;
+uint8_t water_servo_pin = 8;
 uint8_t temp_sensor_pin = 38;
+uint8_t temp_servo_pin = 9;
+uint8_t stepper_step_pin = 35;
+uint8_t stepper_direction_pin = 37;
+int limit_switch = A0;
 
 //states
 
@@ -47,6 +52,7 @@ bool power = false;
 OneWire oneWire(temp_sensor_pin);
 DallasTemperature sensors(&oneWire);
 LiquidCrystal lcd(22,24,26,28,30,32);
+SpeedyStepper stepper;
 
 void setup() {
   Serial.begin(9600);
@@ -63,12 +69,14 @@ void setup() {
   ramen_servo.write(ramen_default_pos);
   water_servo.write(water_default_pos);
   temp_servo.write(temp_default_pos);
-  
+
+  stepper.connectToPins(stepper_step_pin, stepper_direction_pin);
   sensors.begin();
 
   pinMode(start_button, INPUT);
   pinMode(emergency_stop, INPUT);
-  pinMode(shake, OUTPUT);
+  pinMode(shake_pin, OUTPUT);
+  pinMode(limit_switch, INPUT);
 
   int buttonStateStart = 0;
   int buttonStateEnd = 0;
@@ -94,7 +102,7 @@ void hotplate_on_off(){
 void hotplate_boil(){
   boil_servo.write(power_default_pos);
   delay(500);
-  boilservo.write(boil_pos);
+  boil_servo.write(boil_pos);
 }
 
 void boil(){
@@ -107,13 +115,19 @@ void boil(){
 }
 
 void open_water(){
-  water_servo.write(15);                  // sets the servo position according to the scaled value
+  water_servo.write(90);                  // sets the servo position according to the scaled value
   delay(15);
 }
 
 void close_water(){
   water_servo.write(0);                  // sets the servo position according to the scaled value
   delay(15);
+}
+
+void dispense_water(){
+  open_water();
+  delay(5000);
+  close_water();
 }
 
 float temp_check(){
@@ -134,14 +148,14 @@ void reactToInput(int input){
 void ramen_dispense(){
     reactToInput(0);
     delay(500);
-    reactToInput(90);
+    reactToInput(-90);
 }
 
 void vibrate() {
   for (int i = 0; i < 5; i++) {
-    digitalWrite(shake, HIGH);
+    digitalWrite(shake_pin, HIGH);
     delay(500);
-    digitalWrite(shake, LOW);
+    digitalWrite(shake_pin, LOW);
   }
 }
 
@@ -149,14 +163,14 @@ void powder_dispense(int repeat){
   for(int i = 0; i < repeat; i++){
       if (powder_pos == 0) {
             powder_pos = 180;
-            pivot.write(powder_pos);
+            pivot_servo.write(powder_pos);
             delay(500);
             vibrate();
             Serial.println("current pos: 180");
      }
      else {
           powder_pos = 0;
-          pivot.write(powder_pos);
+          pivot_servo.write(powder_pos);
           delay(500);
           vibrate();
           Serial.println("current pos: 0");
@@ -176,8 +190,24 @@ void lcd_display(String temp, String time_left){
   delay(500);
 }
 
+void stepper_ramen(){
+  stepper.setSpeedInStepsPerSecond(300);
+  stepper.setAccelerationInStepsPerSecondPerSecond(300);
+
+  while(analogRead(limit_switch) == 0){
+    Serial.println(analogRead(limit_switch));
+    stepper.moveRelativeInSteps(-500);
+    if (analogRead(limit_switch) != 0){
+      stepper.moveRelativeInSteps(100); // full rev backwards
+      break;
+    }
+  }
+  ramen_dispense();
+}
+
 
 void run_all(){
+  dispense_water();
   temp_servo.write(temp_pos);
   boil();
   while(true){
@@ -188,10 +218,14 @@ void run_all(){
     Serial.print("Hot: ");
     Serial.print(power);
     Serial.println();
-  
-    if (temp > 95 && power){
-      ramen_dispense();
+    
+    sprintf(lcd_temp, "%f", temp);
+    lcd_display(lcd_temp,"Please Stand By");
+    
+    if (temp > 90 && power){
       powder_dispense(4);
+      stepper_ramen();
+      temp_servo.write(temp_default_pos);
       
       while(seconds != 0 && minutes != 0){
         sprintf(lcd_temp, "%f", temp);
@@ -205,10 +239,14 @@ void run_all(){
           seconds = 59;
           minutes --;
         }
+        if(seconds == 0 && minutes == 0){
+          break;
+        }
       }
       hotplate_on_off();
+      
     }
-    temp_servo.write(temp_default_pos);
+    
     
     buttonStateEnd = digitalRead(emergency_stop);
     Serial.print("End Status: ");
@@ -216,6 +254,7 @@ void run_all(){
     Serial.println();
     if (buttonStateEnd == HIGH){
       hotplate_on_off();
+      stepper.moveRelativeInSteps(0);
       Serial.println("Halted");
       break;
     }
@@ -225,15 +264,11 @@ void run_all(){
 }
 
 void loop() {
-  float temp = temp_check();
-  Serial.println(temp);
-  //Button Versionå
-//  buttonStateStart = digitalRead(start_button);
-//  if (buttonStateStart == HIGH) {
-//    digitalWrite(ledPin, HIGH);
-//    Serial.print("Start Status: ");
-//    Serial.print(buttonStateStart);
-//    Serial.println();
-//    run_all();
-//  } 
+  buttonStateStart = digitalRead(start_button);
+  if (buttonStateStart == HIGH) {
+    Serial.print("Start Status: ");
+    Serial.print(buttonStateStart);
+    Serial.println();
+    run_all();
+  } 
 }

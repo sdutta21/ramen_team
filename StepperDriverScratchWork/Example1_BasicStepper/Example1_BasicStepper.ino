@@ -23,7 +23,7 @@ void setup()
   //
   // connect and configure the stepper motor to its IO pins
   //
-  stepper.connectToPins(MOTOR_STEP_PIN, MOTOR_DIRECTION_PIN);
+  stepper.connectToPins(35, 37);
 }
 
 

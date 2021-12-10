@@ -30,7 +30,6 @@ void setup()
         Serial.println("");   
         Serial.println("WiFi connected");   
         bot.begin();   
-        pinMode(LED, OUTPUT);   
 }   
 
 void loop()  
@@ -38,12 +37,11 @@ void loop()
 message m = bot.getUpdates(); // Read new messages   
 if (m.text.equals("on"))  
       {   
-  digitalWrite(LED, 1);    
+     
   bot.sendMessage(m.chat_id, "The Led is now ON");   
 }   
 else if (m.text.equals("off"))  
       {   
-  digitalWrite(LED, 0);    
   bot.sendMessage(m.chat_id, "The Led is now OFF");   
 }   
 }  

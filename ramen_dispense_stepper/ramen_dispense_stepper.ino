@@ -33,7 +33,7 @@ void stepper_ramen(){
 void reset_stepper(){
   stepper.setSpeedInStepsPerSecond(300);
   stepper.setAccelerationInStepsPerSecondPerSecond(300);
-  stepper.moveRelativeInSteps(-500);
+  stepper.moveRelativeInSteps(500);
 }
 
 
@@ -41,5 +41,6 @@ void loop() {
 
   stepper_ramen();
   reset_stepper();
+  Serial.println("Complete");
 
 }

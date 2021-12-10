@@ -230,7 +230,7 @@ void lcd_display(String temp, String time_left){
 
 
 void run_all(){
-  dispense_water()
+  dispense_water();
   boil();
   tempservo.write(temp_insert_pos);
   while(true){
@@ -306,7 +306,6 @@ void loop() {
 
   buttonStateStart = digitalRead(start_button);
   if (buttonStateStart == HIGH) {
-    digitalWrite(ledPin, HIGH);
     Serial.print("Start Status: ");
     Serial.print(buttonStateStart);
     Serial.println();
