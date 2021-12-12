@@ -17,9 +17,11 @@ int power_default_pos = 0;    // variable to store the servo position
 int power_pos = 90;
 int boil_pos = 270; // for the second button presser because the servo is oriented differently
 int ramen_default_pos = 90;
-int powder_pos = 0;
+int powder_pos = 65;
+int powder_default_pos = 155;
 int water_default_pos = 0;
-int temp_default_pos = 180;
+int water_pos = 90;
+int temp_default_pos = 150;
 int temp_pos = 80;
 
 //pins
@@ -30,17 +32,19 @@ uint8_t boil_servo_pin = 5;
 uint8_t ramen_servo_pin = 10;
 uint8_t shake_pin = 7;
 uint8_t pivot_servo_pin = 11;
-uint8_t water_servo_pin = 8;
+uint8_t water_servo_pin = 4;
 uint8_t temp_sensor_pin = 38;
-uint8_t temp_servo_pin = 9;
+uint8_t temp_servo_pin = 3;
 uint8_t stepper_step_pin = 35;
 uint8_t stepper_direction_pin = 37;
 int limit_switch = A0;
+uint8_t cook_pin = 1;
 
 //states
 
 int buttonStateStart = 0;
 int buttonStateEnd = 0;
+int telegram_start = 0;
 int minutes = 6;
 int seconds = 0;
 char timeline[16];
@@ -69,6 +73,7 @@ void setup() {
   ramen_servo.write(ramen_default_pos);
   water_servo.write(water_default_pos);
   temp_servo.write(temp_default_pos);
+  pivot_servo.write(powder_default_pos);
 
   stepper.connectToPins(stepper_step_pin, stepper_direction_pin);
   sensors.begin();
@@ -77,6 +82,7 @@ void setup() {
   pinMode(emergency_stop, INPUT);
   pinMode(shake_pin, OUTPUT);
   pinMode(limit_switch, INPUT);
+  pinMode(cook_pin, INPUT);
 
   int buttonStateStart = 0;
   int buttonStateEnd = 0;
@@ -115,18 +121,18 @@ void boil(){
 }
 
 void open_water(){
-  water_servo.write(90);                  // sets the servo position according to the scaled value
-  delay(15);
+  water_servo.write(water_pos);                  // sets the servo position according to the scaled value
+  delay(1000);
 }
 
 void close_water(){
-  water_servo.write(0);                  // sets the servo position according to the scaled value
-  delay(15);
+  water_servo.write(water_default_pos);                  // sets the servo position according to the scaled value
+  delay(1000);
 }
 
 void dispense_water(){
   open_water();
-  delay(5000);
+  delay(3000);
   close_water();
 }
 
@@ -149,6 +155,8 @@ void ramen_dispense(){
     reactToInput(0);
     delay(500);
     reactToInput(-90);
+    delay(500);
+    reactToInput(0);
 }
 
 void vibrate() {
@@ -161,33 +169,19 @@ void vibrate() {
 
 void powder_dispense(int repeat){
   for(int i = 0; i < repeat; i++){
-      if (powder_pos == 0) {
-            powder_pos = 180;
-            pivot_servo.write(powder_pos);
-            delay(500);
-            vibrate();
-            Serial.println("current pos: 180");
-     }
-     else {
-          powder_pos = 0;
-          pivot_servo.write(powder_pos);
-          delay(500);
-          vibrate();
-          Serial.println("current pos: 0");
-     }
+      pivot_servo.write(powder_pos);
+      delay(1000);
+      pivot_servo.write(powder_default_pos);
+      delay(1000);
     }
 }
 
 void lcd_display(String temp, String time_left){
   lcd.setCursor(0,0);
-  delay(50);
   lcd.print("Temperature:  "+ temp);
-  delay(500);
   
   lcd.setCursor(0,1);
-  delay(50);
   lcd.print("Time Left:  " + time_left);
-  delay(500);
 }
 
 void stepper_ramen(){
@@ -197,19 +191,24 @@ void stepper_ramen(){
   while(analogRead(limit_switch) == 0){
     Serial.println(analogRead(limit_switch));
     stepper.moveRelativeInSteps(-500);
-    if (analogRead(limit_switch) != 0){
-      stepper.moveRelativeInSteps(100); // full rev backwards
+    if (analogRead(limit_switch) != 0){ 
       break;
     }
   }
+  stepper.moveRelativeInSteps(200); // full rev backwards
   ramen_dispense();
 }
 
 
 void run_all(){
   dispense_water();
+  delay(1000);
   temp_servo.write(temp_pos);
+  delay(1000);
+  powder_dispense(4);
+  delay(1000);
   boil();
+  
   while(true){
     float temp = temp_check();
     Serial.print(temp);
@@ -219,16 +218,17 @@ void run_all(){
     Serial.print(power);
     Serial.println();
     
-    sprintf(lcd_temp, "%f", temp);
-    lcd_display(lcd_temp,"Please Stand By");
+    String str_temp = String(temp, 2);
+    Serial.println(str_temp);
+    lcd_display(str_temp,"?");
     
-    if (temp > 90 && power){
-      powder_dispense(4);
+    
+    if (temp > 30 && power){
       stepper_ramen();
       temp_servo.write(temp_default_pos);
       
       while(seconds != 0 && minutes != 0){
-        sprintf(lcd_temp, "%f", temp);
+        sprintf(lcd_temp, "%d", temp);
         sprintf(timeline,"%0.2d mins %0.2d secs", minutes, seconds);
         lcd_display(lcd_temp,timeline);
         
@@ -255,6 +255,7 @@ void run_all(){
     if (buttonStateEnd == HIGH){
       hotplate_on_off();
       stepper.moveRelativeInSteps(0);
+      temp_servo.write(temp_default_pos);
       Serial.println("Halted");
       break;
     }
@@ -264,11 +265,21 @@ void run_all(){
 }
 
 void loop() {
-  buttonStateStart = digitalRead(start_button);
-  if (buttonStateStart == HIGH) {
+  telegram_start = digitalRead(cook_pin);
+  if (telegram_start == HIGH) {
     Serial.print("Start Status: ");
     Serial.print(buttonStateStart);
     Serial.println();
     run_all();
   } 
 }
+//
+//  buttonStateStart = digitalRead(start_button);
+//  if (buttonStateStart == HIGH) {
+//    digitalWrite(esp8266, LOW);
+//    Serial.print("Start Status: ");
+//    Serial.print(buttonStateStart);
+//    Serial.println();
+//    run_all();
+//  } 
+//}
