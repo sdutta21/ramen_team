@@ -21,8 +21,8 @@ int powder_pos = 65;
 int powder_default_pos = 155;
 int water_default_pos = 0;
 int water_pos = 90;
-int temp_default_pos = 150;
-int temp_pos = 80;
+int temp_default_pos = 110;
+int temp_pos = 10;
 
 //pins
 uint8_t start_button = 34;
@@ -45,8 +45,8 @@ uint8_t cook_pin = 1;
 int buttonStateStart = 0;
 int buttonStateEnd = 0;
 int telegram_start = 0;
-int minutes = 6;
-int seconds = 0;
+int minutes = 1;
+int seconds = 59;
 char timeline[16];
 char lcd_temp[16];
 bool power = false;
@@ -208,7 +208,7 @@ void run_all(){
   powder_dispense(4);
   delay(1000);
   boil();
-  
+  delay(500);
   while(true){
     float temp = temp_check();
     Serial.print(temp);
@@ -224,12 +224,14 @@ void run_all(){
     
     
     if (temp > 30 && power){
-      stepper_ramen();
       temp_servo.write(temp_default_pos);
+      delay(500);
+      stepper_ramen();
+      delay(1000);
       
-      while(seconds != 0 && minutes != 0){
+      while(seconds != 0 || minutes != 0){
         sprintf(lcd_temp, "%d", temp);
-        sprintf(timeline,"%0.2d mins %0.2d secs", minutes, seconds);
+        sprintf(timeline,"%0.1d:%0.2d", minutes, seconds);
         lcd_display(lcd_temp,timeline);
         
         delay(1000);
@@ -239,7 +241,7 @@ void run_all(){
           seconds = 59;
           minutes --;
         }
-        if(seconds == 0 && minutes == 0){
+        if(minutes < 0){
           break;
         }
       }
@@ -265,21 +267,21 @@ void run_all(){
 }
 
 void loop() {
-  telegram_start = digitalRead(cook_pin);
-  if (telegram_start == HIGH) {
+//  telegram_start = digitalRead(cook_pin);
+//  if (telegram_start == HIGH) {
+//    Serial.print("Start Status: ");
+//    Serial.print(buttonStateStart);
+//    Serial.println();
+//    run_all();
+//  } 
+
+
+  buttonStateStart = digitalRead(start_button);
+  if (buttonStateStart == HIGH) {
+    //digitalWrite(esp8266, LOW);
     Serial.print("Start Status: ");
     Serial.print(buttonStateStart);
     Serial.println();
     run_all();
   } 
 }
-//
-//  buttonStateStart = digitalRead(start_button);
-//  if (buttonStateStart == HIGH) {
-//    digitalWrite(esp8266, LOW);
-//    Serial.print("Start Status: ");
-//    Serial.print(buttonStateStart);
-//    Serial.println();
-//    run_all();
-//  } 
-//}
