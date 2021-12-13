@@ -45,7 +45,7 @@ uint8_t cook_pin = 1;
 int buttonStateStart = 0;
 int buttonStateEnd = 0;
 int telegram_start = 0;
-int minutes = 1;
+int minutes = 3;
 int seconds = 59;
 char timeline[16];
 char lcd_temp[16];
@@ -223,7 +223,7 @@ void run_all(){
     lcd_display(str_temp,"?");
     
     
-    if (temp > 30 && power){
+    if (temp > 90 && power){
       temp_servo.write(temp_default_pos);
       delay(500);
       stepper_ramen();
