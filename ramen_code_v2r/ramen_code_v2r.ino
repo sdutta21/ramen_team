@@ -19,8 +19,8 @@ int boil_pos = 270; // for the second button presser because the servo is orient
 int ramen_default_pos = 90;
 int powder_pos = 65;
 int powder_default_pos = 155;
-int water_default_pos = 0;
-int water_pos = 90;
+int water_default_pos = 180;
+int water_pos = 0;
 int temp_default_pos = 110;
 int temp_pos = 10;
 
@@ -132,7 +132,7 @@ void close_water(){
 
 void dispense_water(){
   open_water();
-  delay(3000);
+  delay(50000);
   close_water();
 }
 
@@ -202,10 +202,8 @@ void stepper_ramen(){
 
 void run_all(){
   dispense_water();
-  delay(1000);
+  delay(3000);
   temp_servo.write(temp_pos);
-  delay(1000);
-  powder_dispense(4);
   delay(1000);
   boil();
   delay(500);
@@ -226,8 +224,11 @@ void run_all(){
     if (temp > 90 && power){
       temp_servo.write(temp_default_pos);
       delay(500);
+      powder_dispense(4);
+      delay(5000);
       stepper_ramen();
       delay(1000);
+      
       
       while(seconds != 0 || minutes != 0){
         sprintf(lcd_temp, "%d", temp);
